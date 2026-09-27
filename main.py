@@ -16,18 +16,34 @@ NVIDIA_KEYS = [
     "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"
 ]
 
+# Aapke diye gaye 100% Verified Working Models
 MODELS = {
-    "llama70b": {"name": "Llama 3.1 70B (Text)", "model_id": "meta/llama-3.1-70b-instruct", "type": "text"},
-    "vision": {"name": "Llama 3.2 Vision", "model_id": "meta/llama-3.2-90b-vision-instruct", "type": "vision"},
-    "mistral": {"name": "Mistral Large", "model_id": "mistralai/mistral-large-2-instruct", "type": "text"},
-    "image_gen": {"name": "Stable Diffusion 3 (Image)", "model_id": "stabilityai/stable-diffusion-3-medium", "type": "image"}
+    # Chat / LLM Models
+    "nemotron": {"name": "Nemotron 3 Super (120B)", "model_id": "nvidia/nemotron-3-super-120b-a12b", "type": "text"},
+    "gpt_oss": {"name": "GPT-OSS (20B)", "model_id": "openai/gpt-oss-20b", "type": "text"},
+    "mistral_nemotron": {"name": "Mistral Nemotron", "model_id": "mistralai/mistral-nemotron", "type": "text"},
+    "muse_glimmer": {"name": "Muse Glimmer (30B)", "model_id": "meta/muse-glimmer-30b", "type": "text"},
+    "kimi": {"name": "Kimi K3", "model_id": "moonshotai/kimi-k3", "type": "text"},
+    
+    # Vision Models
+    "vision_llama": {"name": "Llama 3.2 Vision (11B)", "model_id": "meta/llama-3.2-11b-vision-instruct", "type": "vision"},
+    "vision_nemotron": {"name": "Nemotron Nano Omni Reasoning", "model_id": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning", "type": "vision"},
+    
+    # Translation Models
+    "translate_v1": {"name": "Riva Translate v1.1", "model_id": "nvidia/riva-translate-4b-instruct-v1.1", "type": "text"},
+    "translate_v2": {"name": "Riva Translate v2", "model_id": "nvidia/riva-translate-4b-instruct-v2", "type": "text"},
+    
+    # Image Generation Models
+    "flux_klein": {"name": "Flux.2 Klein (4B)", "model_id": "black-forest-labs/flux.2-klein-4b", "type": "image"},
+    "flux_schnell": {"name": "Flux.1 Schnell", "model_id": "black-forest-labs/flux.1-schnell", "type": "image"},
+    "stable_diffusion": {"name": "Stable Diffusion 3 Medium", "model_id": "stabilityai/stable-diffusion-3-medium", "type": "image"}
 }
 
 SESSION_HISTORY = []
-CURRENT_MODEL = "llama70b"
+CURRENT_MODEL = "nemotron"
 
 def get_html():
-    current_meta = MODELS.get(CURRENT_MODEL, MODELS["llama70b"])
+    current_meta = MODELS.get(CURRENT_MODEL, MODELS["nemotron"])
     
     options_html = ""
     for k, v in MODELS.items():
@@ -77,7 +93,7 @@ def get_html():
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-        <title>NEXUS // AI STUDIO</title>
+        <title>NEXUS // VERIFIED AI STUDIO</title>
         <script src="https://cdn.tailwindcss.com"></script>
         <style>
             body {{ background-color: #030307; color: #e2e8f0; font-family: monospace; }}
@@ -106,13 +122,13 @@ def get_html():
             <div class="flex items-start space-x-3 mb-4">
                 <div class="w-7 h-7 rounded-lg bg-emerald-600/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 font-bold text-xs shrink-0">AI</div>
                 <div class="bg-zinc-900 border border-zinc-800 px-4 py-3 rounded-2xl rounded-tl-sm text-xs text-zinc-200 max-w-[80%] leading-relaxed shadow-md">
-                    Namaste! Active model: <strong class="text-emerald-400">{current_meta['name']}</strong>. Aap mujhse sawaal pooch sakte hain ya prompt de sakte hain.
+                    Namaste! Active verified model: <strong class="text-emerald-400">{current_meta['name']}</strong>. Aap sawaal pooch sakte hain!
                 </div>
             </div>
             {history_html}
         </main>
 
-        <!-- Input Bar (ChatGPT Style with Inline Upload Icon) -->
+        <!-- Input Bar -->
         <form action="/send" method="POST" enctype="multipart/form-data" class="w-full max-w-3xl mx-auto bg-zinc-900/95 border border-zinc-800 rounded-2xl p-2.5 shadow-2xl flex items-center space-x-2 mb-2">
             {upload_icon_html}
             <input type="text" name="prompt" required placeholder="{placeholder}" class="flex-grow bg-zinc-950 border border-zinc-800 text-xs text-zinc-100 px-4 py-3 rounded-xl focus:outline-none focus:border-emerald-500 transition-all placeholder:text-zinc-600" autocomplete="off">
@@ -158,17 +174,17 @@ async def send_prompt(prompt: str = Form(...), image_file: UploadFile = File(Non
     user_img_b64 = None
 
     if model_type == "image":
-        url = "https://ai.api.nvidia.com/v1/genai/stabilityai/stable-diffusion-3-medium"
+        url = f"https://ai.api.nvidia.com/v1/genai/{current_meta['model_id']}"
         headers = {"Authorization": f"Bearer {api_key}", "Accept": "application/json", "Content-Type": "application/json"}
         payload = {"prompt": prompt, "cfg_scale": 5, "steps": 25, "aspect_ratio": "16:9"}
         try:
-            res = requests.post(url, headers=headers, json=payload, timeout=30)
+            res = requests.post(url, headers=headers, json=payload, timeout=35)
             if res.status_code == 200:
                 data = res.json()
                 img_b64 = data["artifact"][0]["base64"] if "artifact" in data and data["artifact"] else ""
                 response_text = f"data:image/png;base64,{img_b64}" if img_b64 else "https://picsum.photos/500/300"
             else:
-                response_text = "https://picsum.photos/500/300"
+                response_text = f"Image Gen Error ({res.status_code})"
         except:
             response_text = "https://picsum.photos/500/300"
 
@@ -189,7 +205,7 @@ async def send_prompt(prompt: str = Form(...), image_file: UploadFile = File(Non
             if res.status_code == 200:
                 response_text = res.json()["choices"][0]["message"]["content"]
             else:
-                response_text = f"API Error: Status {res.status_code}"
+                response_text = f"Vision API Error: Status {res.status_code}"
         except Exception as e:
             response_text = f"Error: {str(e)}"
 
